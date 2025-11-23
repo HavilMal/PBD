@@ -9,7 +9,9 @@ SELECT imie, w_stadku_od FROM KOCURY WHERE W_STADKU_OD BETWEEN '2005-09-01' AND 
 SELECT imie_wroga, gatunek, stopien_wrogosci FROM WROGOWIE WHERE LAPOWKA IS NULL ORDER BY STOPIEN_WROGOSCI ASC;
 
 -- Zadanie 4
-SELECT imie, ' zwany ', pseudo, ' (fun. ', funkcja, ') lowi myszki w bandzie ', nr_bandy, ' od ', w_stadku_od From KOCURY Where PLEC = 'M';
+SELECT Concat(
+imie, ' zwany ', pseudo, ' (fun. ', funkcja, ') lowi myszki w bandzie ', nr_bandy,  ' od ', w_stadku_od)
+AS "Wszystko o Kocurach" From KOCURY Where PLEC = 'M';
 
 -- Zadanie 5
 -- CHARINDEX tylko w sql server zwraca 0 jeśli znaku nie ma w ciągu, STUFF pozwala na zamiane znaku na wybranej pozycji innym znakiem

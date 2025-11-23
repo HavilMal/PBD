@@ -8,7 +8,9 @@ SELECT imie, w_stadku_od FROM KOCURY WHERE W_STADKU_OD >= '01-09-2005' AND W_STA
 SELECT imie_wroga, gatunek, stopien_wrogosci FROM WROGOWIE WHERE LAPOWKA IS NULL ORDER BY STOPIEN_WROGOSCI ASC;
 
 -- Zadanie 4
-SELECT imie, ' zwany ', pseudo, ' (fun. ', funkcja, ') lowi myszki w bandzie ', nr_bandy, ' od ', w_stadku_od From KOCURY Where PLEC = 'M';
+SELECT
+imie || ' zwany ' || pseudo || ' (fun. '  || funkcja || ') lowi myszki w bandzie ' || nr_bandy ||  ' od ' || w_stadku_od
+AS "Wszystko o Kocurach" From KOCURY Where PLEC = 'M';
 
 -- Zadanie 5
 -- REGEXP_REPLACE pozwala na zamiane podanego wystąpienia danego ciągu znaków od podanej litery 

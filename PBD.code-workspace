@@ -1,0 +1,13 @@
+{
+	"folders": [
+		{
+			"path": "."
+		},
+		{
+			"path": "../Cyberbezpieczeństwo"
+		}
+	],
+	"settings": {
+		"liveServer.settings.multiRootWorkspaceName": "L3"
+	}
+}
