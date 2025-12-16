@@ -12,20 +12,20 @@ FROM kocury k1
 GROUP BY b1.nazwa
 ;
 
--- desc: użycie widoku do wykonania zapytania z parametrem (nie znalazłem sposobu na przyjęcie wartości bezpośrednio od użytkownika)
--- run
-DECLARE @kot VARCHAR(15)
-SET @kot = 'RURA'
+
+-- desc: użycie widoku do wykonania zapytania z parametrem
+DEFINE kot = ''
+ACCEPT kot PROMPT 'Podaj pseudonim kota:'
 SELECT pseudo,
        imie,
        funkcja,
        przydzial_myszy,
-       'OD ' + CAST(p1."mini" AS VARCHAR) + ' DO ' + CAST(p1."maxi" AS VARCHAR),
+       'OD ' || TO_CHAR(p1."mini") || ' DO ' || TO_CHAR(p1."maxi") "granice",
        w_stadku_od
 FROM kocury k1
          LEFT JOIN bandy b1 ON k1.nr_bandy = b1.nr_bandy
          LEFT JOIN przydzialy p1 ON b1.nazwa = p1.nazwa
-WHERE pseudo = @kot
+WHERE pseudo = '&kot'
 ;
 
 -- head: Zadanie 31
@@ -39,9 +39,9 @@ SELECT r1.pseudo,
        r1."przydzial_mini",
        r1."avrg_extra"
 FROM (SELECT k1.*,
-             RANK() OVER (PARTITION BY k1.nr_bandy ORDER BY DATEDIFF(DAY, k1.w_stadku_od, SYSDATETIME()) DESC) "staz_rank",
-             MIN(przydzial_myszy) OVER ()                                                                      "przydzial_mini",
-             AVG(COALESCE(myszy_extra, 0)) OVER (PARTITION BY k1.nr_bandy)                                     "avrg_extra"
+             RANK() OVER (PARTITION BY k1.nr_bandy ORDER BY SYSDATE - k1.w_stadku_od DESC) "staz_rank",
+             MIN(przydzial_myszy) OVER ()                                                  "przydzial_mini",
+             AVG(COALESCE(myszy_extra, 0)) OVER (PARTITION BY k1.nr_bandy)                 "avrg_extra"
       FROM kocury k1
                LEFT JOIN bandy b1 ON k1.nr_bandy = b1.nr_bandy
       WHERE b1.nazwa = 'CZARNI RYCERZE'
@@ -54,26 +54,25 @@ WHERE "staz_rank" <= 3)
 SELECT pseudo, plec, przydzial_myszy, COALESCE(myszy_extra, 0)
 FROM przydzialy_kotow;
 
--- desc: rozpoczęcie transakcji
+-- desc: aktualizacja danych z perspektywy przy pomocy zadanych formuł, wszelkie zmiany w bazie nie są trwałe do polecenia COMMIT. Oracle nie pozwala modyfikować kolumn, które nie odwołują się bezpośrednio do tabeli
 -- silent
-BEGIN TRANSACTION podwyzka;
-
--- desc: aktualizacja danych z perspektywy przy pomocy zadanych formuł
--- silent
-UPDATE przydzialy_kotow
+UPDATE kocury k1
 SET przydzial_myszy = CASE
-                          WHEN plec = 'D' THEN COALESCE(przydzial_myszy, 0) + przydzial_mini * 0.1
+                          WHEN plec = 'D' THEN COALESCE(przydzial_myszy, 0) +
+                                               (SELECT "przydzial_mini" FROM przydzialy_kotow WHERE k1.pseudo = pseudo) *
+                                               0.1
                           WHEN plec = 'M' THEN COALESCE(przydzial_myszy, 0) + 10 END,
-    myszy_extra     = COALESCE(myszy_extra, 0) + avrg_extra * 0.15;
+    myszy_extra     = COALESCE(myszy_extra, 0) +
+                      (SELECT "avrg_extra" FROM przydzialy_kotow WHERE k1.pseudo = pseudo) * 0.15;
 
 -- desc: wyświetlenie zaktualizowanych danych po podwyżce
 -- run
 SELECT pseudo, plec, przydzial_myszy, COALESCE(myszy_extra, 0)
 FROM przydzialy_kotow;
 
--- desc: cofnięcie transakcji
+-- desc: cofnięcie UPDATE
 -- silent
-ROLLBACK TRANSACTION podwyzka;
+ROLLBACK;
 
 -- head: Zadanie 32a
 -- desc: zdefiniowanie dwóch CTE całkowitego spożycia dla wszystkich kotów oraz przydziału według funkcji i płci z podziałem na bandę, a także całkowitej sumy w bandzie. Następnie złączenie z sumami przydziałów ze względu na funkcje.
@@ -95,20 +94,53 @@ WITH spozycie AS (SELECT funkcja, plec, nr_bandy, COALESCE(przydzial_myszy, 0) +
                           INNER JOIN spozycie s1 ON b1.nr_bandy = s1.nr_bandy
                  GROUP BY b1.nazwa, s1.plec)
 SELECT *
-FROM podzial
+FROM podzial p1
 UNION
 SELECT 'ZJADA RAZEM',
        '',
-       SUM(podzial.ile),
-       SUM(podzial.szefunio),
-       SUM(podzial.bandzior),
-       SUM(podzial.lowczy),
-       SUM(podzial.lapacz),
-       SUM(podzial.kot),
-       SUM(podzial.milusia),
-       SUM(podzial.dzielczy),
-       SUM(podzial.suma)
-FROM podzial
+       SUM(p2."ile"),
+       SUM(p2."SZEFUNIO"),
+       SUM(p2."BANDZIOR"),
+       SUM(p2."LOWCZY"),
+       SUM(p2."LAPACZ"),
+       SUM(p2."KOT"),
+       SUM(p2."MILUSIA"),
+       SUM(p2."DZIELCZY"),
+       SUM(p2."SUMA")
+FROM podzial p2
+;
+
+WITH spozycie AS (SELECT funkcja, plec, nr_bandy, COALESCE(przydzial_myszy, 0) + COALESCE(myszy_extra, 0) "suma"
+                  FROM kocury),
+     podzial AS (SELECT b1.nazwa,
+                        CASE WHEN s1.plec = 'M' THEN 'Kocor' WHEN s1.plec = 'D' THEN 'Kotka' END "plec",
+                        COUNT(*)                                                                 "ile",
+                        SUM(CASE WHEN s1.funkcja = 'SZEFUNIO' THEN s1."suma" ELSE 0 END)         "SZEFUNIO",
+                        SUM(CASE WHEN s1.funkcja = 'BANDZIOR' THEN s1."suma" ELSE 0 END)         "BANDZIOR",
+                        SUM(CASE WHEN s1.funkcja = 'LOWCZY' THEN s1."suma" ELSE 0 END)           "LOWCZY",
+                        SUM(CASE WHEN s1.funkcja = 'LAPACZ' THEN s1."suma" ELSE 0 END)           "LAPACZ",
+                        SUM(CASE WHEN s1.funkcja = 'KOT' THEN s1."suma" ELSE 0 END)              "KOT",
+                        SUM(CASE WHEN s1.funkcja = 'MILUSIA' THEN s1."suma" ELSE 0 END)          "MILUSIA",
+                        SUM(CASE WHEN s1.funkcja = 'DZIELCZY' THEN s1."suma" ELSE 0 END)         "DZIELCZY",
+                        SUM(s1."suma")                                                           "SUMA"
+                 FROM bandy b1
+                          INNER JOIN spozycie s1 ON b1.nr_bandy = s1.nr_bandy
+                 GROUP BY b1.nazwa, s1.plec)
+SELECT *
+FROM podzial p1
+UNION
+SELECT 'ZJADA RAZEM',
+       '',
+       SUM(p2."ile"),
+       SUM(p2."SZEFUNIO"),
+       SUM(p2."BANDZIOR"),
+       SUM(p2."LOWCZY"),
+       SUM(p2."LAPACZ"),
+       SUM(p2."KOT"),
+       SUM(p2."MILUSIA"),
+       SUM(p2."DZIELCZY"),
+       SUM(p2."SUMA")
+FROM podzial p2
 ;
 
 -- head: Zadanie 32b
@@ -130,13 +162,13 @@ WITH spozycie AS (SELECT funkcja, plec, nazwa, COALESCE(przydzial_myszy, 0) + CO
                         s2."s"                     "SUMA"
                  FROM spozycie s1 PIVOT (
                           SUM(s1."suma") FOR funkcja IN (
-                         "SZEFUNIO",
-                         "BANDZIOR",
-                         "LOWCZY",
-                         "LAPACZ",
-                         "KOT",
-                         "MILUSIA",
-                         "DZIELCZY"
+                         'SZEFUNIO' AS szefunio,
+                         'BANDZIOR' AS bandzior,
+                         'LOWCZY' AS lowczy,
+                         'LAPACZ' AS lapacz,
+                         'KOT' AS kot,
+                         'MILUSIA' AS milusia,
+                         'DZIELCZY' AS dzielczy
                          )
                           ) p1
                           LEFT JOIN (SELECT SUM("suma") "s", COUNT(*) "ile", nazwa, plec

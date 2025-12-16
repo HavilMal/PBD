@@ -1,5 +1,5 @@
--- Zadanie 26
--- Stworzenie perspektywy
+-- head: Zadanie 26
+-- desc: Stworzenie perspektywy
 CREATE VIEW zadziorne_kotki AS
 WITH kotki AS (SELECT *
                FROM kocury
@@ -13,12 +13,14 @@ SELECT kotki.pseudo
 FROM kotki
          INNER JOIN zadziorni ON kotki.pseudo = zadziorni.pseudo;
 
--- Zadanie 26
--- Użycie perspektywy
+-- desc: Użycie perspektywy
+-- run
 SELECT *
 FROM zadziorne_kotki;
 
--- Zadanie 27
+-- head: Zadanie 27
+-- desc: użycie rekursywnego CTE, aby przechodzić po drzewie
+-- run
 WITH hierarhia AS (SELECT 1 AS lvl, kocury.*
                    FROM kocury
                    WHERE funkcja = 'BANDZIOR'
@@ -31,7 +33,9 @@ FROM hierarhia
 WHERE plec = 'M'
 ORDER BY lvl;
 
--- Zadanie 28
+-- head: Zadanie 28
+-- desc: Ponowne użycie rekursywnego CTE do rekursywnego przechodzenia drzewa, replicate pozwala na duplikowanie ciągów znaków N razy
+-- run
 WITH hierarhia AS (SELECT 0 AS lvl, kocury.*
                    FROM kocury
                    WHERE szef IS NULL
@@ -44,17 +48,15 @@ FROM hierarhia
 WHERE COALESCE(myszy_extra, 0) != 0
 ;
 
--- Zadanie 29
--- todo inaczej niż w przykladzie
-SELECT DISTINCT k1.pseudo, b1.nazwa, s1."mini" + (s1."maxi" - s1."mini") / 3, k1.przydzial_myszy
+-- head: Zadanie 29
+-- desc: w podzapytaniu znajduje minimalny i maksymalny przydział myszy dla funkcji następnie, następnie wybieram koty, które nie są szefami żadnego innego kota i które spełniają warunek (w przykładzie jest nierówność ostra co według mnie nie jest zgodne z treścią zadania)
+-- run
+SELECT DISTINCT k1.pseudo, b1.nazwa
 FROM kocury k1
-         LEFT JOIN (SELECT funkcja, MIN(przydzial_myszy) "mini", MAX(przydzial_myszy) "maxi"
-                    FROM kocury
-                    GROUP BY funkcja) s1
-                   ON k1.funkcja = s1.funkcja
+         LEFT JOIN funkcje f1 ON k1.funkcja = f1.funkcja
          LEFT JOIN bandy b1 ON k1.nr_bandy = b1.nr_bandy
-         RIGHT JOIN wrogowie_kocurow wk1 ON k1.pseudo = wk1.pseudo
+         INNER JOIN wrogowie_kocurow wk1 ON k1.pseudo = wk1.pseudo
 WHERE k1.pseudo NOT IN (SELECT szef FROM kocury WHERE szef IS NOT NULL)
-  AND s1."mini" + (s1."maxi" - s1."mini") / 3 <= k1.przydzial_myszy
+  AND f1.min_myszy + (f1.max_myszy - f1.min_myszy) / 3 <= k1.przydzial_myszy
 ;
 

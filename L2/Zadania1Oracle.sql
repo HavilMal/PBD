@@ -1,4 +1,5 @@
 -- head: Zadanie 12
+-- run
 SELECT k1.pseudo, k1.przydzial_myszy, b1.nazwa
 FROM kocury k1
          LEFT JOIN bandy b1 ON k1.nr_bandy = b1.nr_bandy
@@ -7,6 +8,7 @@ WHERE b1.teren IN ('POLE', 'CALOSC')
 ORDER BY k1.przydzial_myszy DESC;
 
 -- head: Zadanie 13
+-- run
 SELECT k1.imie, k1.w_stadku_od
 FROM kocury k1
          INNER JOIN kocury k2 ON k1.w_stadku_od < k2.w_stadku_od
@@ -14,6 +16,7 @@ WHERE k2.imie = 'JACEK'
 ORDER BY k1.w_stadku_od DESC;
 
 -- head: Zadanie 14a
+-- run
 SELECT k1.imie, k1.funkcja, k2.imie "Szef 1", k3.imie "Szef 2", k4.imie "Szef 3"
 FROM kocury k1
          LEFT JOIN kocury k2 ON k1.szef = k2.pseudo
@@ -22,6 +25,7 @@ FROM kocury k1
 WHERE k1.funkcja IN ('KOT', 'MILUSIA');
 
 -- head: Zadanie 14b
+-- run
 SELECT "imie", k2.funkcja, "Szef 1", "Szef 2", "Szef 3"
 FROM (SELECT *
       FROM (SELECT CONNECT_BY_ROOT imie "imie", level "lvl", imie
@@ -36,6 +40,7 @@ FROM (SELECT *
 
 -- head: Zadanie 14c
 -- desc: Dla każdego kota z funkcją kot lub milusia znajduję najdłuższą ścieżkę zaczynającą się od szefa wybranego kota
+-- run
 SELECT k1.imie, k1.funkcja, MAX("szefowie")
 FROM kocury k1
          LEFT JOIN LATERAL (SELECT CONNECT_BY_ROOT k1.imie                              "imie",
@@ -49,6 +54,7 @@ GROUP BY k1.imie, k1.funkcja
 ;
 
 -- head: Zadanie 15
+-- run
 SELECT k1.imie, b1.nazwa, wk1.imie_wroga, w1.stopien_wrogosci, wk1.data_incydentu
 FROM kocury k1
          LEFT JOIN bandy b1 ON k1.nr_bandy = b1.nr_bandy
@@ -61,6 +67,7 @@ ORDER BY k1.imie
 
 
 -- head: Zadanie 16
+-- run
 SELECT b1.nazwa, COUNT(DISTINCT k1.pseudo) "Koty z wrogami"
 FROM koty.bandy b1
          INNER JOIN kocury k1 ON b1.nr_bandy = k1.nr_bandy
@@ -69,6 +76,7 @@ GROUP BY b1.nazwa
 ;
 
 -- head: Zadanie 17
+-- run
 SELECT *
 FROM (SELECT k1.funkcja, k1.pseudo, COUNT(*) "Liczba wrogow"
       FROM kocury k1
@@ -78,6 +86,7 @@ WHERE "Liczba wrogow" > 1
 ;
 
 -- head: Zadanie 18
+-- run
 SELECT imie, "Dawka roczna", DECODE(SIGN("Dawka roczna" - 864), 1, 'POWYRZEJ 864', 0, '864', -1, 'Ponizej 864')
 FROM (SELECT k1.imie, 12 * (COALESCE(k1.przydzial_myszy, 0) + COALESCE(k1.myszy_extra, 0)) "Dawka roczna"
       FROM kocury k1)
@@ -85,6 +94,7 @@ FROM (SELECT k1.imie, 12 * (COALESCE(k1.przydzial_myszy, 0) + COALESCE(k1.myszy_
 
 -- head: Zadanie 19a
 -- Jeśli banda nie jest powiązana z żadnym kotem pseudo będzie wartością null
+-- run
 SELECT b1.nr_bandy, b1.nazwa
 FROM bandy b1
          LEFT JOIN kocury k1 ON b1.nr_bandy = k1.nr_bandy
@@ -92,6 +102,7 @@ WHERE k1.pseudo IS NULL
 ;
 
 -- head: Zadanie 20
+-- run
 SELECT k1.pseudo, k1.funkcja, k1.przydzial_myszy
 FROM kocury k1
 WHERE k1.przydzial_myszy >=
@@ -105,6 +116,8 @@ WHERE k1.przydzial_myszy >=
 ;
 
 -- head: Zadanie 21
+-- desc: Obliczenie średniej dla każdej funkcji, następnie wybranie funkcji, która jest mniejsza lub równa od wszystkich i większa, lub równa od wszystkich
+-- run
 WITH spozycie AS (SELECT funkcja, AVG(COALESCE(przydzial_myszy, 0) + COALESCE(myszy_extra, 0)) "avrg"
                   FROM kocury
                   WHERE funkcja != 'SZEFUNIO'
@@ -117,7 +130,7 @@ WHERE "avrg" >= ALL (SELECT "avrg" FROM spozycie)
 
 
 -- head: Zadanie 22a
--- desc: W podzapytaniu zliczana jest ilość unikalnych wierszy następnie wybierane są tylko te spełniające warunek
+-- desc: W podzapytaniu zliczana jest ilość unikalnych wierszy, następnie wybierane są tylko te spełniające warunek
 -- DEFINE i ACCEPT pozwalają definować zmienną i przyjmować dane od użytkownika
 DEFINE numer =  0
 ACCEPT numer PROMPT 'Podaj liczbę kotów:'
@@ -135,14 +148,16 @@ WHERE "no" <= &numer
 ;
 
 -- head: Zadanie 22b
--- desc: rownum jest evaluowany przed order by natomiast where jest evaluowany po wiec potrzebne są 3 SELECT-y żeby znaleźć wartość w 6 rzędzie
+-- desc: rownum jest evaluowany przed order by natomiast where jest ewaluowany po wiec potrzebne są 3 SELECT-y, żeby znaleźć wartość w 6 rzędzie
+DEFINE numer =  0
+ACCEPT numer PROMPT 'Podaj liczbę kotów:'
 SELECT pseudo, "suma1"
 FROM (SELECT pseudo, COALESCE(przydzial_myszy, 0) + COALESCE(myszy_extra, 0) "suma1"
       FROM kocury
       ORDER BY "suma1" DESC)
 WHERE "suma1" >= (SELECT "suma2"
                   FROM (SELECT "suma2", ROWNUM "row"
-                        FROM (SELECT COALESCE(przydzial_myszy, 0) + COALESCE(myszy_extra, 0) "suma2"
+                        FROM (SELECT DISTINCT COALESCE(przydzial_myszy, 0) + COALESCE(myszy_extra, 0) "suma2"
                               FROM kocury
                               ORDER BY "suma2" DESC))
                   WHERE "row" = 6)
@@ -150,29 +165,37 @@ WHERE "suma1" >= (SELECT "suma2"
 
 -- head: Zadanie 22c
 -- desc: dla każdego kota zliczam liczbę kotów ze spożyciem większym od danego kota uzyskując przez to jego rangę
-SELECT k1.pseudo, COALESCE(k1.przydzial_myszy, 0) + COALESCE(k1.myszy_extra, 0) "spozycie"
+DEFINE numer =  0
+ACCEPT numer PROMPT 'Podaj liczbę kotów:'
+SELECT k1.pseudo, COALESCE(k1.przydzial_myszy, 0) + COALESCE(k1.myszy_extra, 0) "spozycie", s1."rank"
 FROM kocury k1
          LEFT JOIN LATERAL (
-    SELECT k1.pseudo, COUNT(*) "rank"
+    SELECT k1.pseudo, COUNT(DISTINCT COALESCE(k2.przydzial_myszy, 0) + COALESCE(k2.myszy_extra, 0)) "rank"
     FROM kocury k2
     WHERE COALESCE(k1.przydzial_myszy, 0) + COALESCE(k1.myszy_extra, 0) <
           COALESCE(k2.przydzial_myszy, 0) + COALESCE(k2.myszy_extra, 0)
     GROUP BY k1.pseudo
     ) s1 ON k1.pseudo = s1.pseudo
-WHERE COALESCE(s1."rank" + 1, 1) <= 6
+-- WHERE COALESCE(s1."rank" + 1, 1) <=6
+ORDER BY "spozycie" DESC
 ;
+
 
 -- head: Zadanie 22d
 -- desc: RANK nadaje rekordom rangę (taką samą w przypadku remisów)
+DEFINE numer =  0
+ACCEPT numer PROMPT 'Podaj liczbę kotów:'
 SELECT pseudo, "zjada"
 FROM (SELECT k1.pseudo,
              COALESCE(k1.przydzial_myszy, 0) + COALESCE(k1.myszy_extra, 0)                             "zjada",
              RANK() OVER (ORDER BY COALESCE(k1.przydzial_myszy, 0) + COALESCE(k1.myszy_extra, 0) DESC) "rank"
       FROM kocury k1)
-WHERE "rank" <= 6
+WHERE "rank" <= &numer
 ;
 
--- Zadanie 23
+-- head: Zadanie 23
+-- desc: zliczam wystąpienia następnie szereguje rekordy według odległości od średniej w podziale na 2 partycję mniejszą i większą od średniej
+-- run
 (SELECT "rok", "wstapienia"
  FROM (SELECT "rok",
               "wstapienia",
@@ -196,40 +219,27 @@ UNION
 ORDER BY "wstapienia"
 ;
 
-(SELECT "rok", "wstapienia"
- FROM (SELECT TO_CHAR(EXTRACT(YEAR FROM w_stadku_od)) "rok", COUNT(*) "wstapienia"
-       FROM kocury
-       GROUP BY EXTRACT(YEAR FROM w_stadku_od))
- WHERE "wstapienia" = (SELECT "wstapienia"
-                       FROM (SELECT COUNT(*) "wstapienia", AVG(COUNT(*)) OVER () "avrg"
-                             FROM kocury
-                             GROUP BY EXTRACT(YEAR FROM w_stadku_od))
-                       WHERE "wstapienia" < "avrg"
-                       ORDER BY ABS("avrg" - "wstapienia") FETCH FIRST 1 ROW ONLY)
-    OR "wstapienia" = (SELECT "wstapienia"
-                       FROM (SELECT COUNT(*) "wstapienia", AVG(COUNT(*)) OVER () "avrg"
-                             FROM kocury
-                             GROUP BY EXTRACT(YEAR FROM w_stadku_od))
-                       WHERE "wstapienia" > "avrg"
-                       ORDER BY ABS("avrg" - "wstapienia") FETCH FIRST 1 ROW ONLY))
-UNION
-(SELECT 'Srednia' "rok", AVG(COUNT(*)) OVER () "wstapienia"
- FROM kocury
- GROUP BY EXTRACT(YEAR FROM w_stadku_od)
-     FETCH FIRST 1 ROW ONLY)
-ORDER BY "wstapienia"
+
+-- head: Zadanie 24a
+-- desc: W CTE obliczenie średniego przydziału dla bandy, następnie złączenie kotów z bandami, w których średni przydział jest większy od przedziału kota
+-- run
+WITH przydzialy AS (SELECT nr_bandy,
+                           AVG(COALESCE(k1.przydzial_myszy, 0) + COALESCE(k1.myszy_extra, 0)) "avrg"
+                    FROM kocury k1
+                    GROUP BY nr_bandy)
+SELECT k2.imie,
+       COALESCE(k2.przydzial_myszy, 0) + COALESCE(k2.myszy_extra, 0) "zjada",
+       k2.nr_bandy,
+       przydzialy."avrg"
+FROM przydzialy
+         INNER JOIN kocury k2 ON k2.nr_bandy = przydzialy.nr_bandy AND
+                                 COALESCE(k2.przydzial_myszy, 0) + COALESCE(k2.myszy_extra, 0) <= przydzialy."avrg"
+WHERE k2.plec = 'M'
 ;
 
--- Zadanie 24a
--- todo
-SELECT k1.imie,
-       AVG(COALESCE(k1.przydzial_myszy, 0) + COALESCE(k1.myszy_extra, 0)) OVER (PARTITION BY k1.nr_bandy) "avrg",
-       k1.nr_bandy
-FROM kocury k1
-         INNER JOIN kocury k2
-;
-
--- Zadanie 24b
+-- head: Zadanie 24b
+-- desc: w podzapytaniu obliczam sumę i średnie sumy w bandach następnie wybieram tylko kocury z przydziałem mniejszym niż średnia
+-- run
 SELECT s1.imie, s1."sum", s1.nr_bandy, s1."avrg"
 FROM (SELECT k1.*,
              COALESCE(k1.przydzial_myszy, 0) + COALESCE(k1.myszy_extra, 0)                                      "sum",
@@ -240,7 +250,9 @@ FROM (SELECT k1.*,
 WHERE s1.plec = 'M'
 ;
 
--- Zadanie 24c
+-- head: Zadanie 24c
+-- desc: podzapytanie w WHERE jest niepotrzebne, bo można zrobić "sum" < "avrg" ale tak każe polecenie
+-- run
 SELECT s1.imie, s1."sum", s1.nr_bandy, s1."avrg"
 FROM (SELECT k1.*,
              COALESCE(k1.przydzial_myszy, 0) + COALESCE(k1.myszy_extra, 0)                                      "sum",
@@ -251,38 +263,29 @@ WHERE s1.plec = 'M'
       (SELECT AVG(COALESCE(przydzial_myszy, 0) + COALESCE(myszy_extra, 0)) FROM kocury WHERE nr_bandy = s1.nr_bandy)
 ;
 
--- Zadanie 25
--- todo nie wiem dlaczego tu są operatory zbiorowe case byłby prostszy
--- todo użyj with
-(SELECT s1.imie, s1.w_stadku_od, '<--- NAJMLODSZY STAZEM W BANDZIE' || s1.nazwa " "
- FROM (SELECT k1.imie,
-              k1.w_stadku_od,
-              SYSDATE - k1.w_stadku_od                                      "staz",
-              MIN(SYSDATE - k1.w_stadku_od) OVER (PARTITION BY k1.nr_bandy) "mini",
-              b1.nazwa
-       FROM kocury k1
-                LEFT JOIN bandy b1 ON k1.nr_bandy = b1.nr_bandy) s1
- WHERE "staz" = "mini")
+-- head: Zadanie 25
+-- desc: w CTE znajduje najmniejszy i największy staż w danej bandzie, po czym wybieram koty z tymi stażami, należy użyć operatorów zbiorowych dlatego nie użyłem CASE
+-- run
+WITH stats AS (SELECT k1.imie,
+                      b1.nazwa,
+                      k1.w_stadku_od,
+                      SYSDATE - k1.w_stadku_od                                      "staz",
+                      MIN(SYSDATE - k1.w_stadku_od) OVER (PARTITION BY k1.nr_bandy) "mini",
+                      MAX(SYSDATE - k1.w_stadku_od) OVER (PARTITION BY k1.nr_bandy) "maxi"
+               FROM kocury k1
+                        LEFT JOIN bandy b1 ON k1.nr_bandy = b1.nr_bandy)
+SELECT s1.imie, s1.w_stadku_od, '<--- NAJMLODSZY STAZEM W BANDZIE' || s1.nazwa " "
+FROM stats s1
+WHERE "staz" = "mini"
 UNION
-(SELECT s1.imie, s1.w_stadku_od, '<--- NAJSTARSZY STAZEM W BANDZIE' || s1.nazwa " "
- FROM (SELECT k1.imie,
-              k1.w_stadku_od,
-              SYSDATE - k1.w_stadku_od                                      "staz",
-              MAX(SYSDATE - k1.w_stadku_od) OVER (PARTITION BY k1.nr_bandy) "maxi",
-              b1.nazwa
-       FROM kocury k1
-                LEFT JOIN bandy b1 ON k1.nr_bandy = b1.nr_bandy) s1
- WHERE "staz" = "maxi")
+SELECT s1.imie, s1.w_stadku_od, '<--- NAJSTARSZY STAZEM W BANDZIE' || s1.nazwa " "
+FROM stats s1
+WHERE "staz" = "maxi"
 UNION
-(SELECT s1.imie, s1.w_stadku_od, '' " "
- FROM (SELECT k1.imie,
-              k1.w_stadku_od,
-              SYSDATE - k1.w_stadku_od                                      "staz",
-              MIN(SYSDATE - k1.w_stadku_od) OVER (PARTITION BY k1.nr_bandy) "mini",
-              MAX(SYSDATE - k1.w_stadku_od) OVER (PARTITION BY k1.nr_bandy) "maxi"
-       FROM kocury k1) s1
- WHERE "staz" != "mini"
-   AND "staz" != "maxi")
+SELECT s1.imie, s1.w_stadku_od, '' " "
+FROM stats s1
+WHERE "staz" != "mini"
+  AND "staz" != "maxi"
 ;
 
 

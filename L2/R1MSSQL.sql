@@ -25,9 +25,7 @@ WHERE k1.plec = 'D'
 SELECT k1.pseudo, k1.nr_bandy
 FROM kocury k1
          INNER JOIN kocury k2 ON k1.szef = k2.pseudo
-WHERE k1.nr_bandy != k2.nr_bandy
-AND k1.szef = 'TYGRYS'
-;
+WHERE k1.nr_bandy != k2.nr_bandy;
 
 -- head: Zadanie 4
 -- desc: złączenie kocurów z kocurami, wybranie tylko kotów płci męskiej. Jeśli przełożony lub podwłądny jest null wyświetla odpowiedni komunikat przy pomocy COALESCE
@@ -104,7 +102,7 @@ WHERE s1.c_srednia_bandy > (s1.c_srednia);
 -- desc: zliczenie tych samych miesięcy z dat przystąpienia do stadka
 -- run
 SELECT "Miesiac", COUNT("Miesiac")
-FROM (SELECT TO_CHAR(w_stadku_od, 'MONTH') "Miesiac", EXTRACT(MONTH FROM w_stadku_od) "nr" FROM kocury)
+FROM (SELECT DATENAME(MONTH, w_stadku_od) "Miesiac", MONTH(w_stadku_od) "nr" FROM kocury) s1
 GROUP BY "nr", "Miesiac"
 ORDER BY "nr";
 
@@ -114,12 +112,12 @@ ORDER BY "nr";
 SELECT *
 FROM (SELECT k1.funkcja, b1.nazwa, COALESCE(k1.przydzial_myszy, 0) + COALESCE(k1.myszy_extra, 0) "myszy"
       FROM kocury k1
-               LEFT JOIN bandy b1 ON k1.nr_bandy = b1.nr_bandy)
+               LEFT JOIN bandy b1 ON k1.nr_bandy = b1.nr_bandy) s1
     PIVOT (
-    SUM("myszy") FOR nazwa IN ('CZARNI RYCERZE', 'BIALI LOWCY')
-    )
-WHERE funkcja != 'SZEFUNIO'
-ORDER BY funkcja;
+    SUM(s1."myszy") FOR nazwa IN ("CZARNI RYCERZE", "BIALI LOWCY")
+    ) p1
+WHERE p1.funkcja != 'SZEFUNIO'
+ORDER BY p1.funkcja;
 
 -- head: Zadanie 11
 -- desc: w tabeli przestawnej dodano podział na płeć
@@ -127,7 +125,7 @@ ORDER BY funkcja;
 SELECT *
 FROM (SELECT k1.funkcja, k1.plec, b1.nazwa, COALESCE(k1.przydzial_myszy, 0) + COALESCE(k1.myszy_extra, 0) "myszy"
       FROM kocury k1
-               LEFT JOIN bandy b1 ON k1.nr_bandy = b1.nr_bandy) PIVOT (
-    SUM("myszy") FOR nazwa IN ('CZARNI RYCERZE', 'BIALI LOWCY')
-    )
-ORDER BY funkcja;
+               LEFT JOIN bandy b1 ON k1.nr_bandy = b1.nr_bandy) s1 PIVOT (
+    SUM("myszy") FOR nazwa IN ("CZARNI RYCERZE", "BIALI LOWCY")
+    ) p1
+ORDER BY p1.funkcja;
