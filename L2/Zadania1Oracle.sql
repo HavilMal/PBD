@@ -288,4 +288,3 @@ WHERE "staz" != "mini"
   AND "staz" != "maxi"
 ;
 
-

@@ -1,6 +1,7 @@
--- head: Zadanie 1
--- desc: znajduje kota o podanej funkcji i przypisuję tą funkcję do zmiennej jeśli nie zostanie znaleziony żaden kot rzucony zostanie wyjątek no_data_found który jest obsługiwany w EXCEPTION
--- todo parameter
+### Zadanie 1
+Znajduje kota o podanej funkcji i przypisuję tą funkcję do zmiennej jeśli nie zostanie znaleziony żaden kot rzucony zostanie wyjątek no_data_found który jest obsługiwany w exception
+todo parameter
+```sql
 DECLARE
     szukana_funkcja    kocury.funkcja%type := '${funkcja}';
     znaleziona_funkcja kocury.funkcja%type;
@@ -16,12 +17,11 @@ EXCEPTION
     WHEN no_data_found THEN
         dbms_output.put_line('Nie znaleziono żadnego kota');
 END;
--- end
-
-
--- head: Zadanie 3
--- desc: znajduję i wyliczam dane dla kocura o podanym pseudo a następnie wyświetlam pierwszy spełniony warunek dla wybranego kota
--- todo parameter
+```
+### Zadanie 3
+Znajduję i wyliczam dane dla kocura o podanym pseudo a następnie wyświetlam pierwszy spełniony warunek dla wybranego kota
+todo parameter
+```sql
 DECLARE
     szukany_kocur kocury.pseudo%type := '${pseudo}';
     rocznie       Int;
@@ -45,10 +45,10 @@ EXCEPTION
     WHEN no_data_found THEN
         dbms_output.put_line('nie znaleziono kocura o pseudonimie: ' || szukany_kocur);
 END;
--- end
-
--- head: Zadanie 4
--- desc: koty o najniższym stażu to koty, które dołączyły najpóźniej do stada; wybieram numery bady, które występują w tabeli kocury i wypisuję tabele
+```
+### Zadanie 4
+Koty o najniższym stażu to koty, które dołączyły najpóźniej do stada; wybieram numery bady, które występują w tabeli kocury i wypisuję tabele
+```sql
 DECLARE
     TYPE nowi_table IS TABLE OF kocury%ROWTYPE INDEX BY BINARY_INTEGER;
     nowi nowi_table;
@@ -76,11 +76,11 @@ BEGIN
             dbms_output.put_line('');
         END LOOP;
 END;
--- end
-
--- head: Zadanie 5
--- desc: tworzę kursor który przechodzi po złączeniu kotów i ich funkcji, tworzę typ kot, który przechowuje potrzebne dane; w pętli iteruje, dopóki suma nie przekroczy żądanej wartości, jeśli kursor dochodzi do końca danych, otwieram go ponownie. Następnie wypisuje dane w tabeli.
--- todo fix sum update
+```
+### Zadanie 5
+Tworzę kursor który przechodzi po złączeniu kotów i ich funkcji, tworzę typ kot, który przechowuje potrzebne dane; w pętli iteruje, dopóki suma nie przekroczy żądanej wartości, jeśli kursor dochodzi do końca danych, otwieram go ponownie. następnie wypisuje dane w tabeli.
+todo fix sum update
+```sql
 DECLARE
     CURSOR koty IS
         SELECT k1.pseudo, k1.przydzial_myszy, f1.max_myszy
@@ -138,12 +138,10 @@ BEGIN
 
     ROLLBACK;
 END;
--- end
-
-
-
--- head: Zadanie 6
--- desc: tworzę kursor który iteruje po kotach i ich całkowitych przydziałach w malejącej kolejności. Wypisuje 5 pierwszych rekordów
+```
+### Zadanie 6
+Tworzę kursor który iteruje po kotach i ich całkowitych przydziałach w malejącej kolejności. wypisuje 5 pierwszych rekordów
+```sql
 DECLARE
     CURSOR koty IS
         SELECT pseudo, przydzial_myszy + COALESCE(myszy_extra, 0) "zjada"
@@ -172,32 +170,11 @@ BEGIN
             );
         END LOOP;
 END;
--- end
-
--- Zadanie 7
--- todo
-DECLARE
-
-BEGIN
-
-END;
-
-SELECT *
-FROM (SELECT CONNECT_BY_ROOT k2.imie "imie",
-             k2.szef                 "szef",
---              SYS_CONNECT_BY_PATH(RPAD(pseudo, 10, ' '), '|') || '|' "szefowie",
-             level                   "lvl"
-      FROM kocury k2
-      CONNECT BY PRIOR k2.szef = k2.pseudo) PIVOT (
-    MAX("szef") FOR "lvl" IN (1, 2, 3, 4, 5)
-    )
-;
-
-
-
--- head: Zdanie 8
--- desc: sprawdzam czy numer jest dodatni i czy istnieje już banda z tym samym atrybutem, jeśli jest rzucam wyjątek. W przeciwnym wypadku dodaje bandę pod koniec cofam transakcję.
--- todo parametry
+```
+### Zdanie 8
+Sprawdzam czy numer jest dodatni i czy istnieje już banda z tym samym atrybutem, jeśli jest rzucam wyjątek. w przeciwnym wypadku dodaje bandę pod koniec cofam transakcję.
+todo parametry
+```sql
 DECLARE
     nr_bandy_in bandy.nr_bandy%type := '${nr_bandy_in}';
     nazwa_in    bandy.nazwa%type    := '${nazwa_in}';
@@ -235,10 +212,10 @@ EXCEPTION
     WHEN invalid_number THEN
         dbms_output.put_line('Numer bandy musi być dodatni.');
 END;
--- end
-
--- head: Zadanie 9
--- desc: definjuję procedurę, która jako argument przyjmuje funkcję oraz przydział, który ma ustawić wszystkim kotom o podanej funkcji
+```
+### Zadanie 9
+Definjuję procedurę, która jako argument przyjmuje funkcję oraz przydział, który ma ustawić wszystkim kotom o podanej funkcji
+```sql
 CREATE OR REPLACE PROCEDURE zmienprzydizal(funkcja_in IN kocury.funkcja%type,
                                            przydzial_in IN kocury.przydzial_myszy%type) IS
     maxi     funkcje.max_myszy%type;
@@ -260,9 +237,9 @@ EXCEPTION
     WHEN no_data_found THEN
         dbms_output.put_line('Podana funkcja nie istnieje.');
 END;
--- end
-
--- desc: wykonanie procedury i cofnięcie transakcji
+```
+Wykonanie procedury i cofnięcie transakcji
+```sql
 DECLARE
     funkcja_in   kocury.funkcja%type         := '${funkcja}';
     przydzial_in kocury.przydzial_myszy%type := '${przydzial}';
@@ -270,11 +247,10 @@ BEGIN
     zmienprzydizal(funkcja_in, przydzial_in);
     ROLLBACK;
 END;
--- end
-
-
--- head: Zadanie 10
--- desc: definuję kursor kota z potrzebnymi danymi to jest: z przychodami, podwładnym, wrogiem i bandą
+```
+### Zadanie 10
+Definuję kursor kota z potrzebnymi danymi to jest: z przychodami, podwładnym, wrogiem i bandą
+```sql
 CREATE OR REPLACE FUNCTION podatek(pseudo_in IN kocury.pseudo%type) RETURN NUMBER IS
     CURSOR koty IS SELECT k1.przydzial_myszy + COALESCE(k1.myszy_extra, 0)                                  "przychody",
                           (SELECT COUNT(*) > 0 FROM kocury k2 WHERE k1.pseudo = k2.szef)                    "podwladny",
@@ -305,7 +281,6 @@ BEGIN
         podatek := podatek + 1;
     END IF;
 
-    -- koty z szefostwa oddają 2 myszy
     IF kot.banda = 'SZEFOSTWO' THEN
         podatek := podatek + 2;
     END IF;
@@ -314,19 +289,19 @@ BEGIN
 
     RETURN podatek;
 END;
--- end
-
--- desc: użycie funkcji dla podanego kota
+```
+Użycie funkcji dla podanego kota
+```sql
 DECLARE
     pseudo_in kocury.pseudo%type := '${pseudo}';
 BEGIN
     dbms_output.put_line(podatek(pseudo_in));
     ROLLBACK;
 END;
--- end
+```
+### Zdanie 11a
 
--- head: Zdanie 11a
--- todo: użyc kursora z parametrem chyba
+```sql
 DECLARE
     CURSOR grupa IS
         SELECT plec, k1.nr_bandy, b1.nazwa, COUNT(*) "ile"
@@ -357,6 +332,4 @@ BEGIN
             dbms_output.put_line('');
         END LOOP;
 END;
--- end
-
-
+```
