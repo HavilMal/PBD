@@ -43,9 +43,12 @@ WITH hierarhia AS (SELECT 0 AS lvl, kocury.*
                    SELECT lvl + 1, kocury.*
                    FROM kocury
                             INNER JOIN hierarhia ON hierarhia.pseudo = kocury.szef)
-SELECT REPLICATE('===>', lvl) + CAST(lvl AS VARCHAR) + ' ' + imie, COALESCE(szef, 'Sam sobie panem'), funkcja
+SELECT REPLICATE('===>', lvl) + CAST(lvl AS VARCHAR) + ' ' +
+       imie,
+       COALESCE(szef, 'Sam sobie panem'),
+       funkcja
 FROM hierarhia
-WHERE COALESCE(myszy_extra, 0) != 0
+WHERE myszy_extra IS NOT NULL
 ;
 
 -- head: Zadanie 29

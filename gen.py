@@ -38,6 +38,7 @@ class SqlReportParser:
     GENERIC_COMMENT_RE = re.compile(r"^\s*--\s*(.*)$")
     RUN_RE = re.compile(r"^\s*--\s*run\s*$", re.IGNORECASE)
     RUNSILENT_RE = re.compile(r"^\s*--\s*silent\s*$", re.IGNORECASE)
+    END_RE = re.compile(r"^\s*--\s*end\s*$", re.IGNORECASE)
 
     def parse(self, lines: List[str]) -> List[ReportEntry]:
         reports = []
@@ -54,6 +55,7 @@ class SqlReportParser:
             run = self.RUN_RE.match(line)
             runsilent = self.RUNSILENT_RE.match(line)
             comment = self.GENERIC_COMMENT_RE.match(line)
+            end = self.END_RE.match(line)
 
             # ---- HEAD START ----
             if head:
@@ -100,15 +102,15 @@ class SqlReportParser:
             if current_query:
                 if not line.strip().startswith("--"):
                     current_query.sql.append(line)
+
                 
-                if line.endswith(";"):
-                    if current_query:
-                        current_query.finalize()
-                        if current_query.sql != "": 
-                            current_report.queries.append(current_query)
-                    current_query = QueryBlock()
+            if end:
+                if current_query:
+                    current_query.finalize()
+                    if current_query.sql != "":
+                        current_report.queries.append(current_query)
+                current_query = QueryBlock()
                     
-                continue
 
             # If any other line, descriptions end
             collecting_desc = False
@@ -148,7 +150,7 @@ def chooseEngine(path: str):
     if path.count("Oracle") > 0:
         return create_engine("oracle+oracledb://koty:password@localhost:1521/?service_name=FREEPDB1")    
 
-    if path.count("MSSQL") > 0:
+    if path.count("MSSQL") > 0 or path.count("TSQL") > 0:
         password = quote_plus("P@ssw0rd")
         return create_engine(f"mssql+pyodbc://sa:{password}@localhost,1433/Koty?driver=ODBC+Driver+17+for+SQL+Server")
     
@@ -185,15 +187,16 @@ def writePart(sql_path, md_path):
 
 if __name__ == "__main__":
     files = [
-        "L2/R1Oracle.sql",
-        "L2/R1MSSQL.sql",
-        "L2/Zadania1Oracle.sql",
-        "L2/Zadania1MSSQL.sql",
-        "L2/Zadania2Oracle.sql",
-        "L2/Zadania2MSSQL.sql",
+#         "L2/R1Oracle.sql",
+#         "L2/R1MSSQL.sql",
+#         "L2/Zadania1Oracle.sql",
+#         "L2/Zadania1MSSQL.sql",
+#         "L2/Zadania2Oracle.sql",
+#         "L2/Zadania2MSSQL.sql",
+          "L3/BlokOracle.sql"
     ]
     
-    md_path = "Raport 2.md"
+    md_path = "Raport 3.md"
     
     open(md_path, "w+")
     
